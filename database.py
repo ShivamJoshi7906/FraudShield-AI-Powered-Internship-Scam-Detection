@@ -17,4 +17,13 @@ db = client["fake_job_detector"]
 # (a "collection" in MongoDB is like a "table" in normal databases)
 predictions_collection = db["predictions"]
 
+# This creates (or connects to) a collection called "users"
+users_collection = db["users"]
+
+# This creates (or connects to) a collection called "alerts"
+alerts_collection = db["alerts"]
+
+# This creates (or connects to) a collection called "blacklist"
+blacklist_collection = db["blacklist"]
+
 print("Connected to MongoDB successfully!")
