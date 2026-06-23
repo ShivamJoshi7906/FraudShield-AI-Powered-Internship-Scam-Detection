@@ -11,7 +11,6 @@ const userMenuItems = [
   { id: 'scan', label: 'Scan Internship', icon: Scan, path: '/dashboard/scan' },
   { id: 'company', label: 'Company Check', icon: Building2, path: '/dashboard/company' },
   { id: 'alerts', label: 'Community Alerts', icon: Bell, path: '/dashboard/alerts' },
-  { id: 'history', label: 'History', icon: History, path: '/dashboard/history' },
   { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
 ]
 

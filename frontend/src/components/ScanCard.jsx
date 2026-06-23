@@ -10,6 +10,7 @@ const TABS = [
 export default function ScanCard({ onResult }) {
   const [tab, setTab] = useState('text')
   const [text, setText] = useState('')
+  const [companyName, setCompanyName] = useState('')
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -37,38 +38,54 @@ export default function ScanCard({ onResult }) {
     if ((tab === 'pdf' || tab === 'image') && !file) return
 
     setLoading(true)
-    await new Promise(r => setTimeout(r, 2000))
-    setLoading(false)
 
-    // Mock result
-    const rand = Math.random()
-    const isFraud = rand > 0.4
-    const confidence = 0.72 + Math.random() * 0.26
-    const result = {
-      prediction: isFraud ? 'FRAUD' : 'SAFE',
-      confidence: confidence,
-      riskLevel: isFraud ? (confidence > 0.85 ? 'HIGH' : 'MEDIUM') : 'LOW',
-      scamProbability: isFraud ? confidence : 1 - confidence,
-      safeProbability: isFraud ? 1 - confidence : confidence,
-      reasons: isFraud ? [
-        { label: 'Registration Fee Detected', detected: Math.random() > 0.3 },
-        { label: 'Suspicious Contact Info', detected: Math.random() > 0.4 },
-        { label: 'No Company Website Found', detected: Math.random() > 0.5 },
-        { label: 'Unrealistic Salary Offer', detected: Math.random() > 0.5 },
-      ] : [
-        { label: 'Registration Fee Detected', detected: false },
-        { label: 'Suspicious Contact Info', detected: false },
-        { label: 'No Company Website Found', detected: false },
-        { label: 'Unrealistic Salary Offer', detected: false },
-      ],
-      company: text.split(' ').slice(0, 2).join(' ') || (file?.name?.split('.')[0]) || 'Unknown Company',
-      date: new Date().toLocaleDateString(),
+    try {
+      const user = JSON.parse(localStorage.getItem('fraudshield_user') || '{}')
+      const payload = {
+        text: tab === 'text' ? text : `[File: ${file.name}]`,
+        company_name: companyName.trim() || 'Unknown Company',
+        user_name: user.name || 'Anonymous'
+      }
+
+      const res = await fetch('http://localhost:5000/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) throw new Error("API Error")
+      const data = await res.json()
+
+      const isFraud = data.prediction === '1'
+      const confidence = data.confidence ? data.confidence / 100 : 0.85
+      
+      const result = {
+        prediction: isFraud ? 'FRAUD' : 'SAFE',
+        confidence: confidence,
+        riskLevel: isFraud ? (confidence > 0.85 ? 'HIGH' : 'MEDIUM') : 'LOW',
+        scamProbability: isFraud ? confidence : 1 - confidence,
+        safeProbability: isFraud ? 1 - confidence : confidence,
+        reasons: isFraud ? [
+          { label: 'Suspicious Language Detected by AI', detected: true },
+          { label: 'Matches Known Scam Patterns', detected: confidence > 0.8 },
+        ] : [
+          { label: 'Suspicious Language Detected by AI', detected: false },
+        ],
+        company: payload.company_name,
+        date: new Date().toLocaleDateString(),
+      }
+      onResult && onResult(result)
+    } catch (err) {
+      console.error('Scan Error:', err)
+      alert("Failed to connect to the backend scanner. Please ensure the server is running.")
+    } finally {
+      setLoading(false)
     }
-    onResult && onResult(result)
   }
 
   const handleClear = () => {
     setText('')
+    setCompanyName('')
     setFile(null)
     if (fileRef.current) fileRef.current.value = ''
     onResult && onResult(null)
@@ -102,6 +119,15 @@ export default function ScanCard({ onResult }) {
           </button>
         ))}
       </div>
+
+      {/* Company Name Input */}
+      <input
+        type="text"
+        className="input-field mb-4"
+        placeholder="Company Name (Optional)"
+        value={companyName}
+        onChange={e => setCompanyName(e.target.value)}
+      />
 
       {/* Content area */}
       {tab === 'text' && (

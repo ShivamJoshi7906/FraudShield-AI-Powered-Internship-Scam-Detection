@@ -128,15 +128,27 @@ def predict():
     prediction = model.predict(transformed_text)
     result = str(prediction[0])
 
+    # Get confidence score
+    confidence = None
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(transformed_text)[0]
+        confidence = round(float(max(proba)) * 100, 1)
+
+    user_name = data.get("user_name", "Anonymous")
+    company_name = data.get("company_name", "Unknown")
+
     # Save this prediction to MongoDB
     record = {
         "text": text,
         "prediction": result,
+        "confidence": confidence,
+        "user_name": user_name,
+        "company_name": company_name,
         "created_at": datetime.utcnow()
     }
     predictions_collection.insert_one(record)
 
-    return jsonify({"prediction": result})
+    return jsonify({"prediction": result, "confidence": confidence})
 
 
 # -----------------------------------------
@@ -150,9 +162,125 @@ def get_history():
             "id": str(doc["_id"]),
             "text": doc["text"],
             "prediction": doc["prediction"],
+            "confidence": doc.get("confidence"),
+            "user_name": doc.get("user_name", "Anonymous"),
+            "company_name": doc.get("company_name", "Unknown"),
             "created_at": doc["created_at"].isoformat()
         })
     return jsonify(records)
+
+
+# -----------------------------------------
+# Get all registered users (role='user')
+# -----------------------------------------
+@app.route("/users", methods=["GET"])
+def get_users():
+    users = []
+    for doc in users_collection.find({"role": "user"}):
+        users.append({
+            "id": str(doc["_id"]),
+            "name": doc.get("name", ""),
+            "email": doc.get("email", ""),
+            "role": "User",
+            "joined": doc.get("joined_date", "")
+        })
+    return jsonify(users), 200
+
+
+# -----------------------------------------
+# Delete a user by id
+# -----------------------------------------
+@app.route("/users/<user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    result = users_collection.delete_one({"_id": ObjectId(user_id)})
+    if result.deleted_count == 0:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"message": "User deleted successfully"})
+
+
+# -----------------------------------------
+# Dashboard stats (aggregated counts)
+# -----------------------------------------
+@app.route("/stats", methods=["GET"])
+def get_stats():
+    total_users = users_collection.count_documents({"role": "user"})
+    total_scans = predictions_collection.count_documents({})
+    fraud_detected = predictions_collection.count_documents({"prediction": "1"})
+    blacklisted = blacklist_collection.count_documents({})
+    return jsonify({
+        "total_users": total_users,
+        "total_scans": total_scans,
+        "fraud_detected": fraud_detected,
+        "blacklisted": blacklisted
+    }), 200
+
+
+# -----------------------------------------
+# Analytics: compute chart data from real DB
+# -----------------------------------------
+@app.route("/analytics", methods=["GET"])
+def get_analytics():
+    from collections import defaultdict
+
+    # ── Fraud vs Safe by month + Monthly scans ──
+    month_fraud = defaultdict(int)
+    month_safe = defaultdict(int)
+    month_scans = defaultdict(int)
+
+    for doc in predictions_collection.find():
+        dt = doc.get("created_at")
+        if dt is None:
+            continue
+        key = dt.strftime("%b %Y")        # e.g. "Jun 2025"
+        sort_key = dt.strftime("%Y-%m")   # for sorting
+        month_scans[sort_key] += 1
+        if doc.get("prediction") == "1":
+            month_fraud[sort_key] += 1
+        else:
+            month_safe[sort_key] += 1
+
+    # Sort by date and build chart arrays
+    sorted_months = sorted(month_scans.keys())
+    # Use short month names for chart labels
+    month_labels = {}
+    for m in sorted_months:
+        parts = m.split("-")
+        dt_obj = datetime(int(parts[0]), int(parts[1]), 1)
+        month_labels[m] = dt_obj.strftime("%b")
+
+    fraud_vs_safe = [
+        {"name": month_labels[m], "fraud": month_fraud.get(m, 0), "safe": month_safe.get(m, 0)}
+        for m in sorted_months
+    ]
+    monthly_scans_data = [
+        {"name": month_labels[m], "scans": month_scans[m]}
+        for m in sorted_months
+    ]
+
+    # ── Risk distribution from blacklist ──
+    high = blacklist_collection.count_documents({"risk": "HIGH"})
+    medium = blacklist_collection.count_documents({"risk": "MEDIUM"})
+    low = blacklist_collection.count_documents({"risk": "LOW"})
+    risk_distribution = [
+        {"name": "High", "value": high, "color": "#ef4444"},
+        {"name": "Medium", "value": medium, "color": "#f59e0b"},
+        {"name": "Low", "value": low, "color": "#10b981"},
+    ]
+
+    # ── Top flagged texts (group by text snippet) ──
+    fraud_counts = defaultdict(int)
+    for doc in predictions_collection.find({"prediction": "1"}):
+        snippet = doc.get("text", "")[:40]
+        fraud_counts[snippet] += 1
+    top_flagged = sorted(fraud_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    top_scam_data = [{"name": name[:15], "reports": count} for name, count in top_flagged]
+
+    return jsonify({
+        "fraud_vs_safe": fraud_vs_safe,
+        "monthly_scans": monthly_scans_data,
+        "risk_distribution": risk_distribution,
+        "top_scam_companies": top_scam_data
+    }), 200
 
 
 # -----------------------------------------

@@ -12,59 +12,23 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts'
 
-// ─── Mock Data ───
-const mockUsers = [
-  { id: 1, name: 'Shivam Joshi', email: 'shivam@example.com', role: 'User', joined: '2025-01-15' },
-  { id: 2, name: 'Priya Sharma', email: 'priya@example.com', role: 'User', joined: '2025-02-20' },
-  { id: 3, name: 'Arjun Mehta', email: 'arjun@example.com', role: 'User', joined: '2025-03-05' },
-  { id: 4, name: 'Sneha Rao', email: 'sneha@example.com', role: 'User', joined: '2025-04-12' },
-  { id: 5, name: 'Rahul Kumar', email: 'rahul@example.com', role: 'Admin', joined: '2025-01-01' },
-]
-const mockScans = [
-  { id: 1, user: 'Shivam Joshi', company: 'TechSoft Solutions', prediction: 'FRAUD', confidence: '94.2%', date: '2025-06-18' },
-  { id: 2, user: 'Priya Sharma', company: 'Infosys Internship', prediction: 'SAFE', confidence: '97.8%', date: '2025-06-17' },
-  { id: 3, user: 'Arjun Mehta', company: 'DataVision Corp', prediction: 'FRAUD', confidence: '88.5%', date: '2025-06-15' },
-  { id: 4, user: 'Sneha Rao', company: 'Wipro Digital', prediction: 'SAFE', confidence: '95.1%', date: '2025-06-14' },
-  { id: 5, user: 'Shivam Joshi', company: 'StartupXYZ', prediction: 'FRAUD', confidence: '76.3%', date: '2025-06-12' },
-]
-const defaultBlacklist = [
-  { id: 1, name: 'TechSoft Solutions', company: 'TechSoft Solutions', risk: 'HIGH', status: 'Blacklisted', reason: 'Registration fees demanded', date: '2025-06-10' },
-  { id: 2, name: 'QuickJobs India', company: 'QuickJobs India', risk: 'HIGH', status: 'Blacklisted', reason: 'Mass phishing campaign', date: '2025-05-28' },
-  { id: 3, name: 'FreeLance Hub', company: 'FreeLance Hub', risk: 'MEDIUM', status: 'Suspicious', reason: 'Unverified company', date: '2025-05-15' },
-]
-const defaultAlerts = [
-  { id: 1, title: 'Fake Google Internship Scam Circulating', message: 'Multiple reports of fraudulent Google internship offers demanding registration fees of ₹2,000. Do not pay.', severity: 'high', date: '2025-06-18', author: 'Admin' },
-  { id: 2, title: 'Suspicious LinkedIn Messages - TCS Intern', message: 'Users receiving fake TCS internship letters via WhatsApp. Verify directly on tcs.com.', severity: 'medium', date: '2025-06-17', author: 'Admin' },
-  { id: 3, title: 'New Phishing Pattern Detected', message: 'Scammers using professional-looking PDF offer letters with fake company seals.', severity: 'high', date: '2025-06-15', author: 'Admin' },
-  { id: 4, title: 'Amazon SDE Intern Scam Alert', message: 'Fraudulent internship offers with Amazon branding asking for background check fees.', severity: 'medium', date: '2025-06-12', author: 'Admin' },
-]
-const fraudVsSafe = [
-  { name: 'Jan', fraud: 12, safe: 45 }, { name: 'Feb', fraud: 19, safe: 52 },
-  { name: 'Mar', fraud: 15, safe: 60 }, { name: 'Apr', fraud: 25, safe: 48 },
-  { name: 'May', fraud: 22, safe: 70 }, { name: 'Jun', fraud: 30, safe: 65 },
-]
-const monthlyScans = [
-  { name: 'Jan', scans: 57 }, { name: 'Feb', scans: 71 }, { name: 'Mar', scans: 75 },
-  { name: 'Apr', scans: 73 }, { name: 'May', scans: 92 }, { name: 'Jun', scans: 95 },
-]
-const topScamCompanies = [
-  { name: 'TechSoft', reports: 45 }, { name: 'QuickJobs', reports: 38 },
-  { name: 'FreeLance Hub', reports: 28 }, { name: 'DataVision', reports: 22 },
-  { name: 'StartupXYZ', reports: 15 },
-]
-const riskDist = [
-  { name: 'High', value: 35, color: '#ef4444' },
-  { name: 'Medium', value: 40, color: '#f59e0b' },
-  { name: 'Low', value: 25, color: '#10b981' },
-]
+const API = 'http://localhost:5000'
 
 // ─── Sub Pages ───
 function AdminHome({ blacklist }) {
+  const [stats, setStats] = useState({ total_users: 0, total_scans: 0, fraud_detected: 0, blacklisted: 0 })
+  const [charts, setCharts] = useState({ fraud_vs_safe: [], monthly_scans: [] })
+
+  useEffect(() => {
+    fetch(`${API}/stats`).then(r => r.json()).then(setStats).catch(console.error)
+    fetch(`${API}/analytics`).then(r => r.json()).then(setCharts).catch(console.error)
+  }, [])
+
   const topStats = [
-    { label: 'Total Users', value: mockUsers.length, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
-    { label: 'Total Scans', value: mockScans.length, icon: Scan, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Fraud Detected', value: mockScans.filter(s => s.prediction === 'FRAUD').length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Blacklisted', value: blacklist.length, icon: Building2, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Total Users', value: stats.total_users, icon: Users, color: 'text-primary-600', bg: 'bg-primary-50' },
+    { label: 'Total Scans', value: stats.total_scans, icon: Scan, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Fraud Detected', value: stats.fraud_detected, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: 'Blacklisted', value: stats.blacklisted, icon: Building2, color: 'text-amber-600', bg: 'bg-amber-50' },
   ]
   return (
     <div className="space-y-6 animate-fade-in">
@@ -92,51 +56,58 @@ function AdminHome({ blacklist }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <h3 className="font-bold text-gray-900 mb-4">Fraud vs Safe — Monthly</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={fraudVsSafe}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} />
-              <Tooltip /><Legend />
-              <Bar dataKey="fraud" fill="#ef4444" radius={[4,4,0,0]} />
-              <Bar dataKey="safe" fill="#10b981" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {charts.fraud_vs_safe.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={charts.fraud_vs_safe}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} />
+                <Tooltip /><Legend />
+                <Bar dataKey="fraud" fill="#ef4444" radius={[4,4,0,0]} />
+                <Bar dataKey="safe" fill="#10b981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 text-sm text-center py-16">No scan data yet. Run some predictions to see charts.</p>}
         </div>
         <div className="card">
           <h3 className="font-bold text-gray-900 mb-4">Monthly Scans</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={monthlyScans}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} />
-              <Tooltip /><Line type="monotone" dataKey="scans" stroke="#7c3aed" strokeWidth={2} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {charts.monthly_scans.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={charts.monthly_scans}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} />
+                <Tooltip /><Line type="monotone" dataKey="scans" stroke="#7c3aed" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : <p className="text-gray-400 text-sm text-center py-16">No scan data yet.</p>}
         </div>
       </div>
     </div>
   )
 }
 
+
 function UsersPage() {
-  const [users, setUsers] = useState(mockUsers)
+  const [users, setUsers] = useState([])
   const [admins, setAdmins] = useState([])
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [addLoading, setAddLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
 
-  // Fetch all admins from MongoDB on mount
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API}/users`)
+      if (res.ok) setUsers(await res.json())
+    } catch (err) { console.error('Failed to fetch users:', err) }
+  }
+
   const fetchAdmins = async () => {
     try {
-      const res = await fetch('http://localhost:5000/admins')
-      if (res.ok) {
-        const data = await res.json()
-        setAdmins(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch admins:', err)
-    }
+      const res = await fetch(`${API}/admins`)
+      if (res.ok) setAdmins(await res.json())
+    } catch (err) { console.error('Failed to fetch admins:', err) }
   }
 
   useEffect(() => {
+    fetchUsers()
     fetchAdmins()
   }, [])
 
@@ -150,7 +121,7 @@ function UsersPage() {
     }
     setAddLoading(true)
     try {
-      const res = await fetch('http://localhost:5000/register', {
+      const res = await fetch(`${API}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: form.name, email: form.email, password: form.password, role: 'admin' })
@@ -308,7 +279,7 @@ function UsersPage() {
                     <td className="table-cell">
                       <div className="flex gap-2">
                         <button className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600"><Eye className="w-4 h-4" /></button>
-                        <button onClick={() => setUsers(prev => prev.filter(x => x.id !== u.id))} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button>
+                        <button onClick={async () => { try { const res = await fetch(`${API}/users/${u.id}`, { method: 'DELETE' }); if (res.ok) fetchUsers() } catch(err) { console.error(err) } }} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -324,34 +295,50 @@ function UsersPage() {
 
 function ScanHistoryPage() {
   const [q, setQ] = useState('')
-  const filtered = mockScans.filter(s => s.company.toLowerCase().includes(q.toLowerCase()) || s.user.toLowerCase().includes(q.toLowerCase()))
+  const [scans, setScans] = useState([])
+
+  useEffect(() => {
+    fetch(`${API}/history`).then(r => r.json()).then(setScans).catch(console.error)
+  }, [])
+
+  const filtered = scans.filter(s => 
+    (s.text || '').toLowerCase().includes(q.toLowerCase()) ||
+    (s.company_name || '').toLowerCase().includes(q.toLowerCase()) ||
+    (s.user_name || '').toLowerCase().includes(q.toLowerCase())
+  )
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-2xl font-bold text-gray-900">Scan History</h2>
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input className="input-field pl-10" placeholder="Search by user or company..." value={q} onChange={e => setQ(e.target.value)} />
+        <input className="input-field pl-10" placeholder="Search by user, company, or text..." value={q} onChange={e => setQ(e.target.value)} />
       </div>
       <div className="card overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="table-header">User</th><th className="table-header">Company</th>
-                <th className="table-header">Prediction</th><th className="table-header">Confidence</th>
+                <th className="table-header">User</th>
+                <th className="table-header">Company</th>
+                <th className="table-header">Prediction</th>
+                <th className="table-header">Confidence</th>
                 <th className="table-header">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map(s => (
-                <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="table-cell font-medium text-gray-900">{s.user}</td>
-                  <td className="table-cell">{s.company}</td>
-                  <td className="table-cell"><span className={s.prediction === 'FRAUD' ? 'badge-fraud' : 'badge-safe'}>{s.prediction === 'FRAUD' ? '🚨 FRAUD' : '✅ SAFE'}</span></td>
-                  <td className="table-cell">{s.confidence}</td>
-                  <td className="table-cell text-gray-500">{s.date}</td>
-                </tr>
-              ))}
+              {filtered.map(s => {
+                const isFraud = s.prediction === '1'
+                return (
+                  <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="table-cell font-medium text-gray-900">{s.user_name || 'Anonymous'}</td>
+                    <td className="table-cell font-medium text-gray-700">{s.company_name || 'Unknown Company'}</td>
+                    <td className="table-cell"><span className={isFraud ? 'badge-fraud' : 'badge-safe'}>{isFraud ? '🚨 FRAUD' : '✅ SAFE'}</span></td>
+                    <td className="table-cell">{s.confidence != null ? s.confidence + '%' : 'N/A'}</td>
+                    <td className="table-cell text-gray-500">{s.created_at ? s.created_at.split('T')[0] : ''}</td>
+                  </tr>
+                )
+              })}
+              {filtered.length === 0 && <tr><td colSpan={5} className="table-cell text-center text-gray-400 py-8">No scan records found.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -474,47 +461,62 @@ function AdminAlertsPage({ alerts, onPublish, onDelete }) {
 }
 
 function AnalyticsPage() {
+  const [data, setData] = useState({ fraud_vs_safe: [], monthly_scans: [], top_scam_companies: [], risk_distribution: [] })
+
+  useEffect(() => {
+    fetch(`${API}/analytics`).then(r => r.json()).then(setData).catch(console.error)
+  }, [])
+
+  const noData = <p className="text-gray-400 text-sm text-center py-16">No data available yet.</p>
   return (
     <div className="space-y-6 animate-fade-in">
       <h2 className="text-2xl font-bold text-gray-900">Analytics</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
           <h3 className="font-bold text-gray-900 mb-4">Fraud vs Safe</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={fraudVsSafe}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip /><Legend />
-              <Bar dataKey="fraud" fill="#ef4444" radius={[4,4,0,0]} /><Bar dataKey="safe" fill="#10b981" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {data.fraud_vs_safe.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.fraud_vs_safe}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip /><Legend />
+                <Bar dataKey="fraud" fill="#ef4444" radius={[4,4,0,0]} /><Bar dataKey="safe" fill="#10b981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : noData}
         </div>
         <div className="card">
           <h3 className="font-bold text-gray-900 mb-4">Monthly Scans</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyScans}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip />
-              <Line type="monotone" dataKey="scans" stroke="#7c3aed" strokeWidth={2} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {data.monthly_scans.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={data.monthly_scans}><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip />
+                <Line type="monotone" dataKey="scans" stroke="#7c3aed" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : noData}
         </div>
         <div className="card">
-          <h3 className="font-bold text-gray-900 mb-4">Top Scam Companies</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={topScamCompanies} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis type="number" tick={{ fontSize: 12 }} /><YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} /><Tooltip />
-              <Bar dataKey="reports" fill="#7c3aed" radius={[0,4,4,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="font-bold text-gray-900 mb-4">Top Flagged Texts</h3>
+          {data.top_scam_companies.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.top_scam_companies} layout="vertical"><CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis type="number" tick={{ fontSize: 12 }} /><YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={80} /><Tooltip />
+                <Bar dataKey="reports" fill="#7c3aed" radius={[0,4,4,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : noData}
         </div>
         <div className="card">
           <h3 className="font-bold text-gray-900 mb-4">Risk Distribution</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={riskDist} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                {riskDist.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {data.risk_distribution.some(d => d.value > 0) ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={data.risk_distribution} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={4} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {data.risk_distribution.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : noData}
         </div>
       </div>
     </div>
@@ -546,14 +548,14 @@ export default function AdminDashboard() {
   // Fetch from MongoDB on mount
   const fetchBlacklist = async () => {
     try {
-      const res = await fetch('http://localhost:5000/blacklist')
+      const res = await fetch(`${API}/blacklist`)
       if (res.ok) setList(await res.json())
     } catch (err) { console.error('Failed to fetch blacklist:', err) }
   }
 
   const fetchAlerts = async () => {
     try {
-      const res = await fetch('http://localhost:5000/alerts')
+      const res = await fetch(`${API}/alerts`)
       if (res.ok) setAlerts(await res.json())
     } catch (err) { console.error('Failed to fetch alerts:', err) }
   }
@@ -565,7 +567,7 @@ export default function AdminDashboard() {
 
   const handleAddCompany = async (newCompany) => {
     try {
-      const res = await fetch('http://localhost:5000/blacklist', {
+      const res = await fetch(`${API}/blacklist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company: newCompany.company, reason: newCompany.reason, risk: newCompany.risk })
@@ -576,14 +578,14 @@ export default function AdminDashboard() {
 
   const handleDeleteCompany = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/blacklist/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API}/blacklist/${id}`, { method: 'DELETE' })
       if (res.ok) await fetchBlacklist()
     } catch (err) { console.error('Failed to delete from blacklist:', err) }
   }
 
   const handlePublishAlert = async (newAlert) => {
     try {
-      const res = await fetch('http://localhost:5000/alerts', {
+      const res = await fetch(`${API}/alerts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newAlert.title, message: newAlert.message, severity: newAlert.severity })
@@ -594,7 +596,7 @@ export default function AdminDashboard() {
 
   const handleDeleteAlert = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/alerts/${id}`, { method: 'DELETE' })
+      const res = await fetch(`${API}/alerts/${id}`, { method: 'DELETE' })
       if (res.ok) await fetchAlerts()
     } catch (err) { console.error('Failed to delete alert:', err) }
   }

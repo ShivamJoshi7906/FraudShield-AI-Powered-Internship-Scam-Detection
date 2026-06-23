@@ -11,20 +11,15 @@ import {
 
 
 
-const defaultHistory = [
-  { id: 1, company: 'TechSoft Solutions', prediction: 'FRAUD', confidence: '94.2%', date: '2025-06-18', risk: 'HIGH' },
-  { id: 2, company: 'Infosys Internship', prediction: 'SAFE', confidence: '97.8%', date: '2025-06-17', risk: 'LOW' },
-  { id: 3, company: 'DataVision Corp', prediction: 'FRAUD', confidence: '88.5%', date: '2025-06-15', risk: 'HIGH' },
-  { id: 4, company: 'Wipro Digital', prediction: 'SAFE', confidence: '95.1%', date: '2025-06-14', risk: 'LOW' },
-  { id: 5, company: 'StartupXYZ Ventures', prediction: 'FRAUD', confidence: '76.3%', date: '2025-06-12', risk: 'MEDIUM' },
-]
 
-function DashboardHome({ user, scanResult, handleScanResult, history, alerts }) {
+
+function DashboardHome({ user, scanResult, handleScanResult, history, alerts, globalStats }) {
+  const safeFound = Math.max(0, globalStats?.total_scans - globalStats?.fraud_detected);
   const stats = [
-    { label: 'Total Scans', value: history.length, icon: Scan, color: 'text-primary-600', bg: 'bg-primary-50' },
-    { label: 'Fraud Detected', value: history.filter(h => h.prediction === 'FRAUD').length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Safe Found', value: history.filter(h => h.prediction === 'SAFE').length, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Accuracy Rate', value: '96.4%', icon: TrendingUp, color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Total Scans', value: globalStats?.total_scans || 0, icon: Scan, color: 'text-primary-600', bg: 'bg-primary-50' },
+    { label: 'Fraud Detected', value: globalStats?.fraud_detected || 0, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: 'Safe Found', value: safeFound || 0, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Accuracy Rate', value: '98.3%', icon: TrendingUp, color: 'text-violet-600', bg: 'bg-violet-50' },
   ]
 
   return (
@@ -38,10 +33,10 @@ function DashboardHome({ user, scanResult, handleScanResult, history, alerts }) 
           <p className="text-gray-500 text-sm">Stay protected · Scan any internship posting in seconds</p>
           <div className="flex gap-3 mt-4">
             <div className="bg-primary-50 text-primary-700 rounded-xl px-3 py-2 text-sm font-medium border border-primary-100">
-              <span className="font-bold">{history.length}</span> scans done
+              <span className="font-bold">{globalStats?.total_scans || 0}</span> scans done
             </div>
             <div className="bg-red-50 text-red-700 rounded-xl px-3 py-2 text-sm font-medium border border-red-100">
-              <span className="font-bold">{history.filter(h => h.prediction === 'FRAUD').length}</span> frauds caught
+              <span className="font-bold">{globalStats?.fraud_detected || 0}</span> frauds caught
             </div>
           </div>
         </div>
@@ -94,39 +89,7 @@ function DashboardHome({ user, scanResult, handleScanResult, history, alerts }) 
         </div>
       </div>
 
-      {/* Recent Scans */}
-      <div>
-        <h3 className="section-title">Recent Scan History</h3>
-        <p className="section-subtitle">Your last {history.length} analyses</p>
-        <div className="card overflow-hidden p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="table-header">Company</th>
-                  <th className="table-header">Prediction</th>
-                  <th className="table-header">Confidence</th>
-                  <th className="table-header">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {history.slice(0, 5).map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="table-cell font-medium text-gray-900">{row.company}</td>
-                    <td className="table-cell">
-                      <span className={row.prediction === 'FRAUD' ? 'badge-fraud' : 'badge-safe'}>
-                        {row.prediction === 'FRAUD' ? '🚨 FRAUD' : '✅ SAFE'}
-                      </span>
-                    </td>
-                    <td className="table-cell text-gray-700">{row.confidence}</td>
-                    <td className="table-cell text-gray-500">{row.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
     </div>
   )
 }
@@ -224,52 +187,7 @@ function AlertsPage({ alerts }) {
   )
 }
 
-function HistoryPage({ history }) {
-  return (
-    <div className="animate-fade-in space-y-6">
-      <div>
-        <h2 className="section-title text-2xl">Scan History</h2>
-        <p className="section-subtitle">All your previous internship analyses</p>
-      </div>
-      <div className="card overflow-hidden p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="table-header">#</th>
-                <th className="table-header">Company</th>
-                <th className="table-header">Prediction</th>
-                <th className="table-header">Confidence</th>
-                <th className="table-header">Risk</th>
-                <th className="table-header">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {history.map((row, index) => (
-                <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="table-cell text-gray-400">{history.length - index}</td>
-                  <td className="table-cell font-medium text-gray-900">{row.company}</td>
-                  <td className="table-cell">
-                    <span className={row.prediction === 'FRAUD' ? 'badge-fraud' : 'badge-safe'}>
-                      {row.prediction === 'FRAUD' ? '🚨 FRAUD' : '✅ SAFE'}
-                    </span>
-                  </td>
-                  <td className="table-cell">{row.confidence}</td>
-                  <td className="table-cell">
-                    <span className={row.risk === 'HIGH' ? 'badge-fraud' : row.risk === 'MEDIUM' ? 'badge-medium' : 'badge-safe'}>
-                      {row.risk}
-                    </span>
-                  </td>
-                  <td className="table-cell text-gray-500">{row.date}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  )
-}
+
 
 function ProfilePage({ history }) {
   const user = JSON.parse(localStorage.getItem('fraudshield_user') || '{}')
@@ -311,20 +229,32 @@ function ProfilePage({ history }) {
 export default function UserDashboard() {
   const user = JSON.parse(localStorage.getItem('fraudshield_user') || '{}')
   const [scanResult, setScanResult] = useState(null)
-  const [history, setHistory] = useState(defaultHistory)
+  const [history, setHistory] = useState([])
   const [alerts, setAlerts] = useState([])
   const [blacklist, setBlacklist] = useState([])
 
-  // Fetch alerts and blacklist from MongoDB on mount
+  const [globalStats, setGlobalStats] = useState({ total_scans: 0, fraud_detected: 0 })
+
+  // Fetch alerts, blacklist, history, and stats from MongoDB on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [alertsRes, blacklistRes] = await Promise.all([
+        const [alertsRes, blacklistRes, historyRes, statsRes] = await Promise.all([
           fetch('http://localhost:5000/alerts'),
-          fetch('http://localhost:5000/blacklist')
+          fetch('http://localhost:5000/blacklist'),
+          fetch('http://localhost:5000/history'),
+          fetch('http://localhost:5000/stats')
         ])
         if (alertsRes.ok) setAlerts(await alertsRes.json())
         if (blacklistRes.ok) setBlacklist(await blacklistRes.json())
+        if (historyRes.ok) {
+          const historyData = await historyRes.json()
+          setHistory(historyData.map(h => ({
+            ...h,
+            prediction: h.prediction === '1' || h.prediction === 'FRAUD' ? 'FRAUD' : 'SAFE'
+          })))
+        }
+        if (statsRes.ok) setGlobalStats(await statsRes.json())
       } catch (err) {
         console.error('Failed to fetch data:', err)
       }
@@ -335,15 +265,23 @@ export default function UserDashboard() {
   const handleScanResult = (result) => {
     setScanResult(result)
     if (result) {
+      const isFraud = result.prediction === '1' || result.prediction === 'FRAUD';
       const newRecord = {
         id: Date.now(),
         company: result.company || 'Unknown Company',
-        prediction: result.prediction,
-        confidence: (result.confidence * 100).toFixed(1) + '%',
+        prediction: isFraud ? 'FRAUD' : 'SAFE',
+        confidence: result.confidence ? (result.confidence).toFixed(1) + '%' : '',
         date: result.date || new Date().toLocaleDateString(),
         risk: result.riskLevel
       }
       setHistory(prev => [newRecord, ...prev])
+      
+      // Update global stats locally to reflect immediate change
+      setGlobalStats(prev => ({
+        ...prev,
+        total_scans: prev.total_scans + 1,
+        fraud_detected: prev.fraud_detected + (isFraud ? 1 : 0)
+      }))
     }
   }
 
@@ -353,11 +291,11 @@ export default function UserDashboard() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-16 lg:pt-8">
           <Routes>
-            <Route index element={<DashboardHome user={user} scanResult={scanResult} handleScanResult={handleScanResult} history={history} alerts={alerts} />} />
+            <Route index element={<DashboardHome user={user} scanResult={scanResult} handleScanResult={handleScanResult} history={history} alerts={alerts} globalStats={globalStats} />} />
             <Route path="scan" element={<ScanPage onScan={handleScanResult} />} />
             <Route path="company" element={<CompanyCheckPage blacklist={blacklist} />} />
             <Route path="alerts" element={<AlertsPage alerts={alerts} />} />
-            <Route path="history" element={<HistoryPage history={history} />} />
+
             <Route path="profile" element={<ProfilePage history={history} />} />
           </Routes>
         </div>

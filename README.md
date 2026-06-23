@@ -60,7 +60,7 @@ Job and internship scams are a growing threat targeting students and early-caree
 | **Frontend**  | React 18, Vite, Tailwind CSS, Recharts, Lucide React Icons  |
 | **Backend**   | Python, Flask, Flask-CORS                                   |
 | **Database**  | MongoDB Atlas (via PyMongo)                                 |
-| **ML Model**  | Scikit-learn (TF-IDF Vectorizer + Random Forest Classifier) |
+| **ML Model**  | Scikit-learn, XGBoost, LightGBM (Stacking Classifier)       |
 | **Auth**      | bcrypt (password hashing)                                   |
 
 ---
@@ -271,7 +271,7 @@ Open your browser and navigate to **http://localhost:5173** 🎉
 
 1. **Exploratory Data Analysis** — Data cleaning, missing value handling, class distribution analysis (`EDA_and_Preprocessing.ipynb`)
 2. **Feature Engineering** — Text columns combined and vectorized using **TF-IDF** (Term Frequency–Inverse Document Frequency)
-3. **Model Training** — **Random Forest Classifier** trained on the TF-IDF features (`Model.ipynb`)
+3. **Model Training** — **Stacking Classifier Ensemble** (Linear SVM, XGBoost, LightGBM, Meta: Logistic Regression) trained on TF-IDF features using balanced class weights (`Model.ipynb`)
 4. **Serialization** — Trained model and vectorizer saved as `.pkl` files using `joblib`
 
 ### Model Files
